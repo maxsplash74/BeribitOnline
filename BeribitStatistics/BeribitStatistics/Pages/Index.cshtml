@@ -4,7 +4,47 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<div id="chart" style="max-width: 650px;margin: 35px auto;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+
+    var days = 7;
+
+    $.get(`api/stat/online/${days}`, function (response) {
+        if (!response.Success) {
+            //Сообщение об ошибке
+            return;
+        }
+        if (response.Result === undefined) {
+            return;
+        }
+
+        var stat = response.Result;
+
+        var options = {
+            chart: {
+                type: 'area',
+                zoom: {
+                    enabled: false
+                }
+            },
+            title: {
+                text: 'Ежедневный онлайн пользователей',
+                align: 'left'
+            },
+            series: [{
+                name: 'пользователей',
+                data: stat.Counts
+            }],
+            xaxis: {
+                categories: stat.Dates
+            }
+        }
+
+        var chart = new ApexCharts(document.querySelector("#chart"), options);
+
+        chart.render();
+    });
+</script>

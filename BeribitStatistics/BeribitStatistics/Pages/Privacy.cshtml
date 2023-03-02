@@ -1,0 +1,23 @@
+﻿@page
+@model PrivacyModel
+@{
+    ViewData["Title"] = "Privacy";
+}
+
+<script type="text/javascript" src="lib/microsoft/signalr/dist/browser/signalr.js"></script>
+<script type="text/javascript">
+    var ConnectionStatistics = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/stat")
+        .withAutomaticReconnect()
+        .build();
+
+    ConnectionStatistics.start().then(VisitedPage).catch(function (err) {
+        return console.error(err.toString());
+    });
+
+    function VisitedPage() {
+        ConnectionStatistics.invoke("OnVisitedPage", "/privacy").catch(function (err) {
+            return console.error(err.toString());
+        });
+    }
+</script>

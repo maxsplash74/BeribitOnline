@@ -1,18 +1,18 @@
 using BeribitStatistics.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using BeribitStatistics.Repositories;
+using BeribitStatistics.Services;
 using BeribitStatistics.Tables.Users;
+using Quartz;
+using BeribitStatistics.Extensions;
+using BeribitStatistics.Hubs;
+using BeribitStatistics.Jobs;
 
 namespace BeribitStatistics
 {
@@ -38,7 +38,33 @@ namespace BeribitStatistics
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+            services.AddTransient<StatisticRepository>();
+            services.AddTransient<StatisticService>();
+            services.AddSingleton<StatisticCashService>();
+
             services.AddRazorPages();
+
+            services.AddControllersWithViews()
+                .AddNewtonsoftJson()
+                .AddMvcOptions(options =>
+                {
+                    options.ModelBindingMessageProvider.SetAttemptedValueIsInvalidAccessor((x, y) => $"Недопустимое значение: {x}");
+                    options.ModelBindingMessageProvider.SetNonPropertyAttemptedValueIsInvalidAccessor(x => $"Недопустимое значение: {x}");
+                    options.ModelBindingMessageProvider.SetValueIsInvalidAccessor(x => $"Недопустимое значение: {x}");
+                    options.ModelBindingMessageProvider.SetValueMustNotBeNullAccessor(x => $"Недопустимое значение: {x}");
+                });
+
+            services.AddQuartz(q =>
+            {
+                q.UseMicrosoftDependencyInjectionScopedJobFactory();
+                q.AddJobAndTrigger<SaveHistoryJob>(Configuration);
+            });
+
+            services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+
+            services.AddSignalR();
+
+            services.AddCors();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -61,12 +87,23 @@ namespace BeribitStatistics
 
             app.UseRouting();
 
+            app.UseCors(builder =>
+            {
+                builder.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+            });
+
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
                 endpoints.MapRazorPages();
+                endpoints.MapHub<StatisticsHub>("/hubs/stat");
             });
         }
     }
