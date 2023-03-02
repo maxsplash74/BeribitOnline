@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using BeribitStatistics.Tables.Users;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -12,5 +13,8 @@ namespace BeribitStatistics.Data
             : base(options)
         {
         }
+
+        public virtual DbSet<HistoryViewedPage> HistoryViewedPages { get; set; }
+        public virtual DbSet<HistoryUserIpAddress> HistoryUserIpAddresses { get; set; }
     }
 }
